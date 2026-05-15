@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 模型权重（通常是几十到几百 MB，不应入库）
+*.pth
+*.pt
+
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
+
+# Jupyter
+.ipynb_checkpoints/
+
+#other
+*.docx
+CLAUDE.md
+1D_1phase/output/
+/docs/
