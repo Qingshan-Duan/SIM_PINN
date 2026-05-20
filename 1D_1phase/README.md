@@ -101,16 +101,16 @@ cfg = Config(
 
 ## 运行
 
-环境是 conda 的 **`tor`**。所有命令在 `1D_1phase/` 目录下执行（包导入是 `simulator.X`）。
+Python 用 conda 的 `tor` 环境，但**直接走绝对路径**（不套 `conda run`）。所有命令在 `1D_1phase/` 目录下执行（包导入是 `simulator.X`）。
 
 ```powershell
-conda run -n tor python -m simulator.main
+D:\WorkSoftware\anaconnda\envs\tor\python.exe -m simulator.main
 ```
 
 产物落到 `1D_1phase/output/simulator/`：
 
 - `pressure.npy` — `(n_steps+1, nx)` 全张量
-- `pressure.csv` — `time_day, cell_0, ..., cell_{nx-1}`，给 PINN stage 2 等读取
+- `pressure.csv` — `time_day, cell_0, ..., cell_{nx-1}`，给 surrogate / PINN 对照等使用
 - `rates.csv` — `time_day, well_0_cell{X}, well_1_cell{Y}, ...`，每口井每步的实际流量（含 BHP 井算出的 q）
 - `config.json` — 配置快照（含派生量）
 - `profiles.png` — 几个时刻的压力剖面叠加
@@ -122,7 +122,7 @@ conda run -n tor python -m simulator.main
 ## 测试
 
 ```powershell
-conda run -n tor pytest
+D:\WorkSoftware\anaconnda\envs\tor\Scripts\pytest.exe
 ```
 
 测试都集中在数学/物理上的关键不变量：
@@ -149,12 +149,18 @@ conda run -n tor pytest
 │   ├── main.py       # 入口
 │   └── tests/
 ├── output/simulator/ # 模拟产物（gitignored）
-├── pinn/             # 计划中：本系统的 PINN（stage1/stage2）
+├── pinn/             # 在做：本系统的 PINN（单场景纯物理损失，单目录迭代）
+├── surrogate/        # 计划中：参数化代理模型（扰动井控生成数据 + 物理损失正则）
 └── README.md
 ```
+
+`pinn/` 与 `surrogate/` 是**两条平行的方向**，不是 PINN 的两个阶段。详细约定见仓库根目录的
+`CLAUDE.md`。这两个文件夹里写脚本时，**可以直接** `from simulator.config import Config;
+from simulator.core import run` 来在内存里调用模拟器拿参考解 / 训练数据（包根都是
+`1D_1phase/`），也可以走 `output/simulator/` 落盘文件。
 
 ## 扩展约定
 
 - **唯一的扩展轴是 `Well` Protocol**。求解器只通过 `cell_index`、`rhs_term(p_old, dt)`、
   `diag_term(dt)` 与井交互。新井类型只要实现这三件事，求解器和 Config 都不用动。
-- 不要在这里堆 2D/双相/PINN 的「通用基类」——那些场景会在新文件夹里完全重写。
+- 不要在 `simulator/` 里堆 2D / 双相 / PINN / surrogate 的「通用基类」——那些场景会在新文件夹里完全重写。
