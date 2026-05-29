@@ -149,7 +149,8 @@ D:\WorkSoftware\anaconnda\envs\tor\Scripts\pytest.exe
 │   ├── main.py       # 入口
 │   └── tests/
 ├── output/simulator/ # 模拟产物（gitignored）
-├── pinn/             # 在做：本系统的 PINN（单场景纯物理损失，单目录迭代）
+├── pinn/             # 推进中：本系统的 PINN（单场景纯物理损失；无井+定流量井已驯服，
+│                     # 软约束 IC + 自适应权重；解析真解校验 + 模拟器交叉验证）。架构见 CLAUDE.md
 ├── surrogate/        # 计划中：参数化代理模型（扰动井控生成数据 + 物理损失正则）
 └── README.md
 ```
