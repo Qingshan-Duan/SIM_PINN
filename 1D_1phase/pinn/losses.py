@@ -67,24 +67,34 @@ def bc_right_residual(net: PinnMLP, cfg: PinnConfig, t_hat_bc: torch.Tensor) -> 
     return net(x1, t_hat_bc) - _p_hat_of(cfg.P_right, cfg)
 
 
-def total_loss(net: PinnMLP, cfg: PinnConfig,
-               x_int: torch.Tensor, t_int: torch.Tensor,
-               x_ic: torch.Tensor, t_bc: torch.Tensor,
-               ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
-    """加权总 loss + 各分量（分量已 detach，仅供日志）。"""
+def loss_components(net: PinnMLP, cfg: PinnConfig,
+                    x_int: torch.Tensor, t_int: torch.Tensor,
+                    x_ic: torch.Tensor, t_bc: torch.Tensor,
+                    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """返回**未加权**的三个分量损失张量 (L_pde, L_ic, L_bc)，保留计算图。
+
+    拆开是为了自适应权重：训练侧可分别对每个分量求 ∂L_i/∂θ 来平衡梯度量级。
+    硬约束时 IC 由网络结构精确满足，L_ic 置 0（无梯度）。
+    """
     r_pde = pde_residual(net, cfg, x_int, t_int)
     r_bcl = bc_left_residual(net, cfg, t_bc)
     r_bcr = bc_right_residual(net, cfg, t_bc)
 
     L_pde = (r_pde ** 2).mean()
     L_bc = (r_bcl ** 2).mean() + (r_bcr ** 2).mean()
-    # 硬约束时 IC 由网络结构精确满足，无需罚项；软约束时才计 IC loss
     if cfg.hard_ic:
         L_ic = torch.zeros((), device=L_pde.device)
     else:
-        r_ic = ic_residual(net, cfg, x_ic)
-        L_ic = (r_ic ** 2).mean()
+        L_ic = (ic_residual(net, cfg, x_ic) ** 2).mean()
+    return L_pde, L_ic, L_bc
 
+
+def total_loss(net: PinnMLP, cfg: PinnConfig,
+               x_int: torch.Tensor, t_int: torch.Tensor,
+               x_ic: torch.Tensor, t_bc: torch.Tensor,
+               ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+    """加权总 loss（用 cfg 静态权重）+ 各分量（已 detach，仅供日志）。"""
+    L_pde, L_ic, L_bc = loss_components(net, cfg, x_int, t_int, x_ic, t_bc)
     total = cfg.w_pde * L_pde + cfg.w_ic * L_ic + cfg.w_bc * L_bc
     components = {"pde": L_pde.detach(), "ic": L_ic.detach(), "bc": L_bc.detach()}
     return total, components

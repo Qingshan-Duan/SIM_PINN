@@ -26,7 +26,7 @@ from pinn.train import train
 
 
 def _save_loss_history(history: list, path: Path) -> None:
-    keys = ["iter", "phase", "total", "pde", "ic", "bc"]
+    keys = ["iter", "phase", "total", "pde", "ic", "bc", "w_ic", "w_bc"]
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=keys)
         w.writeheader()

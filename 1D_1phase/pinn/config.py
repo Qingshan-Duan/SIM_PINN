@@ -48,7 +48,9 @@ class PinnConfig:
     # ---------- 网络架构 ----------
     hidden_layers: int = 4           # 隐层数
     hidden_units: int = 50           # 每层神经元
-    hard_ic: bool = True             # True: 硬约束 p_hat=t_hat·N（IC 精确满足，不用 IC 罚项）
+    hard_ic: bool = False            # 尖源井下软约束实测更好（硬约束逼网络画 t=0 源尖峰，早期瞬态崩）；
+                                     # True 为硬约束 p_hat=t_hat·N。无井光滑算例两者打平，见 output 里的对照
+
 
     # ---------- 训练采样（每个量都是每轮重新采的点数） ----------
     n_int: int = 5000                # 内部 PDE 残差采点（全域均匀）
@@ -62,10 +64,18 @@ class PinnConfig:
     adam_lr: float = 1e-3
     lbfgs_iters: int = 1500
 
-    # ---------- loss 权重（手调起步：约束项给更大权重） ----------
+    # ---------- loss 权重（手调起步：约束项给更大权重；开自适应时这是初值） ----------
     w_pde: float = 1.0
     w_ic: float = 10.0
     w_bc: float = 10.0
+
+    # ---------- 自适应损失权重（梯度范数平衡，Wang 2021）----------
+    # 让各约束项的梯度量级与 PDE 项相当：ŵ_i = max|∇L_pde| / mean|∇L_i|，EMA 平滑。
+    # PDE 权重固定为 w_pde 作基准，只自适应 w_ic / w_bc。通用方法（不依赖解析解），2D/两相照用。
+    adaptive_weights: bool = True
+    adaptive_update_every: int = 100   # 每多少 Adam 步重算一次权重
+    adaptive_ema: float = 0.9          # 权重 EMA：保留 90% 旧值 + 10% 新估计
+    adaptive_w_max: float = 1.0e3      # 权重上限，防梯度比病态时跑飞
 
     # ---------- 评估网格（与 simulator 默认一致，方便逐点对照） ----------
     nx_eval: int = 15
