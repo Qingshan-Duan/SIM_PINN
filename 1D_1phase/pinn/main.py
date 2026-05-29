@@ -71,9 +71,9 @@ def main(run_name: Optional[str] = None, no_lbfgs: bool = False,
     # 2. 评估（移到 CPU，评估网格很小）
     net = net.to("cpu")
     result = evaluate(net, cfg)
-    print(f"[eval] L2 relative = {result.l2_rel:.3e}   MAPE = {result.mape:.3e}   "
-          f"R2 = {result.r2:.6f}")
-    print(f"[eval] max |error| = {result.max_abs/1e6:.4f} MPa")
+    print(f"[eval] (vs 解析真解) L2 = {result.l2_rel:.3e}   MAPE = {result.mape:.3e}   "
+          f"R2 = {result.r2:.6f}   max|err| = {result.max_abs/1e6:.4f} MPa")
+    print(f"[validate] 模拟器 vs 解析 max = {result.sim_vs_exact/1e6:.4f} MPa  (尺子自检)")
 
     # 3. 结构化保存到本次运行的独立子文件夹
     out_dir = _run_dir(run_name)
@@ -85,6 +85,7 @@ def main(run_name: Optional[str] = None, no_lbfgs: bool = False,
     torch.save(net.state_dict(), out_dir / "checkpoint.pt")
     _save_loss_history(history, out_dir / "loss_history.csv")
     np.save(out_dir / "pred.npy", result.p_pinn)
+    np.save(out_dir / "exact.npy", result.p_exact)
     np.save(out_dir / "reference.npy", result.p_ref)
     _save_pred_csv(result, out_dir / "pred.csv")
     with open(out_dir / "metrics.json", "w") as f:

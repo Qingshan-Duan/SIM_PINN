@@ -74,6 +74,10 @@ class PinnConfig:
     # 参考解用细 dt（每个 eval 步切成 ref_substeps 个子步）跑 simulator，再在 eval 时间点取样。
     # 否则 dt=1天 的后向欧拉在早期瞬态有 ~0.1 MPa 时间离散误差，会被误当成 PINN 的误差。
     ref_substeps: int = 100
+    # 参考解空间也细化 ref_space_refine 倍（井附近梯度陡，nx=15 截断误差大）。
+    # 必须取奇数：井保持在格心、且细网格格心是粗网格格心的超集，算完能整齐降采样回 nx_eval。
+    # 并且参考解的井按 PINN 同一个高斯（well_sigma_hat）摊到各细格上，让两边解「同一个井」。
+    ref_space_refine: int = 5
 
     # ---------- 随机种子 ----------
     seed: int = 0
@@ -83,6 +87,10 @@ class PinnConfig:
     q_nd: float = field(init=False)       # 无量纲源强（井）
 
     def __post_init__(self) -> None:
+        if self.ref_space_refine < 1 or self.ref_space_refine % 2 == 0:
+            raise ValueError(
+                f"ref_space_refine 必须是正奇数（保证井在格心、降采样对齐），收到 {self.ref_space_refine}"
+            )
         eta = self.k / (self.mu * self.phi * self.ct)       # 扩散系数 m^2/s
         alpha = eta * self.T_end / (self.L ** 2)            # 无量纲扩散系数
         object.__setattr__(self, "alpha_nd", alpha)

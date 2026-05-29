@@ -47,12 +47,12 @@ def plot_profiles(result: EvalResult, save_path: PathLike,
     if well_x is not None:
         ax.axvline(well_x, color="grey", linestyle=":", linewidth=1.2, label="well")
     for c, d in zip(colors, days):
-        ax.plot(x, result.p_ref[d] / 1e6, color=c, linestyle="-", label=f"sim  t={d}d")
+        ax.plot(x, result.p_exact[d] / 1e6, color=c, linestyle="-", label=f"exact t={d}d")
         ax.plot(x, result.p_pinn[d] / 1e6, color=c, linestyle="--", marker="o",
-                markersize=4, label=f"pinn t={d}d")
+                markersize=4, label=f"pinn  t={d}d")
     ax.set_xlabel("x (m)")
     ax.set_ylabel("Pressure (MPa)")
-    ax.set_title("Profiles: simulator (solid) vs PINN (dashed)")
+    ax.set_title("Profiles: analytical (solid) vs PINN (dashed)")
     ax.grid(True, alpha=0.3)
     ax.legend(ncol=2, fontsize=8)
     fig.savefig(save_path, dpi=120, bbox_inches="tight")
@@ -81,12 +81,16 @@ def plot_all_eval(result: EvalResult, plots_dir: Path,
     plots_dir.mkdir(parents=True, exist_ok=True)
     plot_profiles(result, plots_dir / "profiles.png", well_x=well_x)
 
-    vmin = min(result.p_pinn.min(), result.p_ref.min()) / 1e6
-    vmax = max(result.p_pinn.max(), result.p_ref.max()) / 1e6
+    vmin = min(result.p_pinn.min(), result.p_exact.min()) / 1e6
+    vmax = max(result.p_pinn.max(), result.p_exact.max()) / 1e6
     plot_heatmap(result.p_pinn / 1e6, result.grid_x, result.grid_t,
                  "PINN  P(x, t)", plots_dir / "heatmap_pinn.png", vmin=vmin, vmax=vmax)
-    plot_heatmap(result.p_ref / 1e6, result.grid_x, result.grid_t,
-                 "simulator  P(x, t)", plots_dir / "heatmap_ref.png", vmin=vmin, vmax=vmax)
+    plot_heatmap(result.p_exact / 1e6, result.grid_x, result.grid_t,
+                 "analytical  P(x, t)", plots_dir / "heatmap_exact.png", vmin=vmin, vmax=vmax)
     plot_heatmap(np.abs(result.err) / 1e6, result.grid_x, result.grid_t,
-                 "|PINN - simulator|", plots_dir / "error_heatmap.png",
+                 "|PINN - analytical|", plots_dir / "error_heatmap.png",
                  cmap="magma", cbar_label="|error| (MPa)")
+    # 模拟器自检：尺子相对真解的偏差（保留模拟器验证，确认它能复现真解）
+    plot_heatmap(np.abs(result.p_ref - result.p_exact) / 1e6, result.grid_x, result.grid_t,
+                 "|simulator - analytical|  (尺子自检)", plots_dir / "sim_vs_exact_heatmap.png",
+                 cmap="magma", cbar_label="|diff| (MPa)")
