@@ -12,6 +12,7 @@ import torch
 
 from simulator.config import BoundarySpec, Config as SimConfig
 from simulator.core import run as sim_run
+from simulator.well import RateWellSpec
 
 from pinn.config import PinnConfig
 from pinn.net import PinnMLP
@@ -50,6 +51,7 @@ def _reference_on_eval_grid(cfg: PinnConfig) -> np.ndarray:
     返回形状 (n_steps_eval+1, nx)。
     """
     sub = cfg.ref_substeps
+    well = RateWellSpec(cell_index=cfg.well_cell_index(cfg.nx_eval), rate=cfg.well_rate)
     fine = SimConfig(
         nx=cfg.nx_eval, L=cfg.L, A=cfg.A,
         k=cfg.k, mu=cfg.mu, phi=cfg.phi, ct=cfg.ct,
@@ -57,7 +59,7 @@ def _reference_on_eval_grid(cfg: PinnConfig) -> np.ndarray:
         left_bc=BoundarySpec("dirichlet", cfg.P_left),
         right_bc=BoundarySpec("dirichlet", cfg.P_right),
         dt=cfg.dt_eval / sub, n_steps=cfg.n_steps_eval * sub,
-        wells=[],
+        wells=[well],
     )
     return sim_run(fine).p[::sub]
 

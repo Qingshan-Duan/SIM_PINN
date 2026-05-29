@@ -55,12 +55,15 @@ def _run_dir(name: Optional[str]) -> Path:
     return base / folder
 
 
-def main(run_name: Optional[str] = None, no_lbfgs: bool = False) -> None:
-    cfg = PinnConfig()
+def main(run_name: Optional[str] = None, no_lbfgs: bool = False,
+         cfg: Optional[PinnConfig] = None) -> None:
+    if cfg is None:                    # 允许外部传入定制 config（消融/对照），否则用默认
+        cfg = PinnConfig()
     if no_lbfgs:                       # 消融：只跑 Adam，跳过 L-BFGS 精修
         cfg = replace(cfg, lbfgs_iters=0)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[main] device={device}  alpha_nd={cfg.alpha_nd:.4f}  lbfgs_iters={cfg.lbfgs_iters}")
+    print(f"[main] device={device}  alpha_nd={cfg.alpha_nd:.4f}  q_nd={cfg.q_nd:.3f}  "
+          f"lbfgs_iters={cfg.lbfgs_iters}")
 
     # 1. 训练
     net, history = train(cfg, device=device)
@@ -88,7 +91,7 @@ def main(run_name: Optional[str] = None, no_lbfgs: bool = False) -> None:
         json.dump(metrics_dict(result), f, indent=2)
 
     plot_loss_curve(history, plots_dir / "loss_curve.png")
-    plot_all_eval(result, plots_dir)
+    plot_all_eval(result, plots_dir, well_x=cfg.well_x_hat * cfg.L)
 
     print(f"[main] done. Output -> {out_dir}")
 

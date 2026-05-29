@@ -11,9 +11,17 @@ from pinn.net import PinnMLP
 
 
 def _sample(cfg: PinnConfig, device: torch.device):
-    """在无量纲域 [0,1]×[0,1] 上随机采点：内部、IC（t=0 的 x 切片）、BC（x=0/1 的 t 切片）。"""
-    x_int = torch.rand(cfg.n_int, 1, device=device)
-    t_int = torch.rand(cfg.n_int, 1, device=device)
+    """在无量纲域 [0,1]×[0,1] 上随机采点：内部、IC（t=0 的 x 切片）、BC（x=0/1 的 t 切片）。
+
+    内部点 = 全域均匀 n_int + 井附近加密 n_int_well（源项局部、梯度陡，均匀采样会欠采井区）。
+    """
+    x_uni = torch.rand(cfg.n_int, 1, device=device)
+    # 井附近 [well_x_hat ± well_band_hat] 内额外采点，clamp 回 [0,1]
+    band = cfg.well_band_hat
+    x_well = cfg.well_x_hat + (torch.rand(cfg.n_int_well, 1, device=device) - 0.5) * 2.0 * band
+    x_well = x_well.clamp(0.0, 1.0)
+    x_int = torch.cat([x_uni, x_well], dim=0)
+    t_int = torch.rand(x_int.shape[0], 1, device=device)
     x_ic = torch.rand(cfg.n_ic, 1, device=device)
     t_bc = torch.rand(cfg.n_bc, 1, device=device)
     return x_int, t_int, x_ic, t_bc
@@ -32,7 +40,7 @@ def train(cfg: PinnConfig, device: str = "cpu") -> Tuple[PinnMLP, List[dict]]:
     """返回训练好的网络和 loss 历史（list of dict）。"""
     torch.manual_seed(cfg.seed)
     dev = torch.device(device)
-    net = PinnMLP(cfg.hidden_layers, cfg.hidden_units).to(dev)
+    net = PinnMLP(cfg.hidden_layers, cfg.hidden_units, hard_ic=cfg.hard_ic).to(dev)
     history: List[dict] = []
 
     # ---------------- 阶段一：Adam（每步重采 collocation 点） ----------------

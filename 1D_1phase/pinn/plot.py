@@ -35,14 +35,17 @@ def plot_loss_curve(history: List[dict], save_path: PathLike) -> None:
     plt.close(fig)
 
 
-def plot_profiles(result: EvalResult, save_path: PathLike) -> None:
-    """几个时刻的压力剖面：simulator 实线、PINN 虚线+点，同色配对。"""
+def plot_profiles(result: EvalResult, save_path: PathLike,
+                  well_x: Optional[float] = None) -> None:
+    """几个时刻的压力剖面：simulator 实线、PINN 虚线+点，同色配对。well_x 给定则画井位竖线。"""
     n_steps = len(result.grid_t) - 1
     days = sorted({int(round(f * n_steps)) for f in PROFILE_FRACTIONS})
     x = result.grid_x
     colors = plt.cm.viridis(np.linspace(0.0, 1.0, len(days)))
 
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
+    if well_x is not None:
+        ax.axvline(well_x, color="grey", linestyle=":", linewidth=1.2, label="well")
     for c, d in zip(colors, days):
         ax.plot(x, result.p_ref[d] / 1e6, color=c, linestyle="-", label=f"sim  t={d}d")
         ax.plot(x, result.p_pinn[d] / 1e6, color=c, linestyle="--", marker="o",
@@ -72,10 +75,11 @@ def plot_heatmap(field: np.ndarray, x: np.ndarray, t: np.ndarray, title: str,
     plt.close(fig)
 
 
-def plot_all_eval(result: EvalResult, plots_dir: Path) -> None:
+def plot_all_eval(result: EvalResult, plots_dir: Path,
+                  well_x: Optional[float] = None) -> None:
     """批量出评估图：剖面对比 + PINN/参考热图（共用色标）+ 误差热图。"""
     plots_dir.mkdir(parents=True, exist_ok=True)
-    plot_profiles(result, plots_dir / "profiles.png")
+    plot_profiles(result, plots_dir / "profiles.png", well_x=well_x)
 
     vmin = min(result.p_pinn.min(), result.p_ref.min()) / 1e6
     vmax = max(result.p_pinn.max(), result.p_ref.max()) / 1e6

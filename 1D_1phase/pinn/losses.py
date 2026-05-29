@@ -1,12 +1,15 @@
 """PDE 残差 / 初始条件 / 边界条件三类 loss。全部在无量纲坐标下计算。"""
 from __future__ import annotations
 
+import math
 from typing import Dict, Tuple
 
 import torch
 
 from pinn.config import PinnConfig
 from pinn.net import PinnMLP
+
+_SQRT_2PI = math.sqrt(2.0 * math.pi)
 
 
 def _grad(y: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
@@ -18,16 +21,27 @@ def _grad(y: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     )[0]
 
 
+def source_hat(cfg: PinnConfig, x_hat: torch.Tensor) -> torch.Tensor:
+    """井的无量纲源项 s_hat = q_nd · g_σ(x_hat − well_x_hat)。
+
+    g_σ 是单位积分高斯（∫g dx_hat = 1），把点源 δ(x−x_well) 正则化掉，便于自动微分。
+    producer 时 q_nd<0（汇），整体造成压降。
+    """
+    sig = cfg.well_sigma_hat
+    g = torch.exp(-((x_hat - cfg.well_x_hat) ** 2) / (2.0 * sig * sig)) / (sig * _SQRT_2PI)
+    return cfg.q_nd * g
+
+
 def pde_residual(net: PinnMLP, cfg: PinnConfig,
                  x_hat: torch.Tensor, t_hat: torch.Tensor) -> torch.Tensor:
-    """残差 r = ∂p_hat/∂t_hat − alpha_nd · ∂²p_hat/∂x_hat²，形状 (N, 1)。"""
+    """残差 r = ∂p_hat/∂t_hat − alpha_nd · ∂²p_hat/∂x_hat² − s_hat(x_hat)，形状 (N, 1)。"""
     x_hat = x_hat.requires_grad_(True)
     t_hat = t_hat.requires_grad_(True)
     p_hat = net(x_hat, t_hat)
     p_t = _grad(p_hat, t_hat)
     p_x = _grad(p_hat, x_hat)
     p_xx = _grad(p_x, x_hat)
-    return p_t - cfg.alpha_nd * p_xx
+    return p_t - cfg.alpha_nd * p_xx - source_hat(cfg, x_hat)
 
 
 def _p_hat_of(P: float, cfg: PinnConfig) -> float:
@@ -59,13 +73,17 @@ def total_loss(net: PinnMLP, cfg: PinnConfig,
                ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
     """加权总 loss + 各分量（分量已 detach，仅供日志）。"""
     r_pde = pde_residual(net, cfg, x_int, t_int)
-    r_ic = ic_residual(net, cfg, x_ic)
     r_bcl = bc_left_residual(net, cfg, t_bc)
     r_bcr = bc_right_residual(net, cfg, t_bc)
 
     L_pde = (r_pde ** 2).mean()
-    L_ic = (r_ic ** 2).mean()
     L_bc = (r_bcl ** 2).mean() + (r_bcr ** 2).mean()
+    # 硬约束时 IC 由网络结构精确满足，无需罚项；软约束时才计 IC loss
+    if cfg.hard_ic:
+        L_ic = torch.zeros((), device=L_pde.device)
+    else:
+        r_ic = ic_residual(net, cfg, x_ic)
+        L_ic = (r_ic ** 2).mean()
 
     total = cfg.w_pde * L_pde + cfg.w_ic * L_ic + cfg.w_bc * L_bc
     components = {"pde": L_pde.detach(), "ic": L_ic.detach(), "bc": L_bc.detach()}
