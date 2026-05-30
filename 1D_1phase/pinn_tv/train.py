@@ -16,21 +16,39 @@ from pinn_tv.net import TvPinnMLP
 
 
 def _sample(cfg: PinnTvConfig, device: torch.device):
-    """采 (x,t) + 每点独立的整条调度 q̂[K]（每段独立 ~U[ratio_min,ratio_max] 再归一）。"""
+    """采 (x,t) + 整条调度 q̂[K]。两种模式见 cfg.n_schedules_per_batch。
+
+    - =0：每个内部点采独立调度（try1~3）。
+    - >0：相干批——采 M 条调度，每条配若干 (x,t) 点（均匀 + 井附近加密），用 repeat_interleave 展开，
+      让单次梯度同时看到"同一调度在多处的场"。IC/BC 始终每点独立（调度多样性有益）。
+    """
     rmin, rmax = cfg.q_ratio_min, cfg.q_ratio_max
     K = cfg.n_segments
+    band = cfg.well_band_hat
+    M = cfg.n_schedules_per_batch
 
     def _rand_sched(n: int) -> torch.Tensor:
         r = rmin + (rmax - rmin) * torch.rand(n, K, device=device)
         return cfg.ratio_to_qhat(r)
 
-    x_uni = torch.rand(cfg.n_int, 1, device=device)
-    band = cfg.well_band_hat
-    x_well = cfg.well_x_hat + (torch.rand(cfg.n_int_well, 1, device=device) - 0.5) * 2.0 * band
-    x_well = x_well.clamp(0.0, 1.0)
-    x_int = torch.cat([x_uni, x_well], dim=0)
-    t_int = torch.rand(x_int.shape[0], 1, device=device)
-    s_int = _rand_sched(x_int.shape[0])
+    def _well_x(n: int) -> torch.Tensor:
+        return (cfg.well_x_hat + (torch.rand(n, 1, device=device) - 0.5) * 2.0 * band).clamp(0.0, 1.0)
+
+    if M and M > 0:                                   # 相干批
+        sched_M = _rand_sched(M)                      # (M, K)
+        p_uni = max(1, cfg.n_int // M)
+        p_well = max(1, cfg.n_int_well // M)
+        x_uni = torch.rand(M * p_uni, 1, device=device)
+        x_w = _well_x(M * p_well)
+        x_int = torch.cat([x_uni, x_w], dim=0)
+        t_int = torch.rand(x_int.shape[0], 1, device=device)
+        s_int = torch.cat([sched_M.repeat_interleave(p_uni, dim=0),
+                           sched_M.repeat_interleave(p_well, dim=0)], dim=0)
+    else:                                             # 每点独立（旧）
+        x_uni = torch.rand(cfg.n_int, 1, device=device)
+        x_int = torch.cat([x_uni, _well_x(cfg.n_int_well)], dim=0)
+        t_int = torch.rand(x_int.shape[0], 1, device=device)
+        s_int = _rand_sched(x_int.shape[0])
 
     x_ic = torch.rand(cfg.n_ic, 1, device=device)
     s_ic = _rand_sched(cfg.n_ic)

@@ -24,6 +24,12 @@ class PinnTvConfig(PinnConfig):
     q_ratio_max: float = 1.2         # 每段流量相对基准的上限（采得多 20%）
     n_segments: int = 15             # 调度段数（=每个时间步一个独立扰动），需 == n_steps_eval
 
+    # ---------- 采样相干性（改进①）----------
+    # 0 = 每个 collocation 点采独立调度（try1~3 的行为）；
+    # >0 = 每批采 M 条调度、每条配多个 (x,t) 点（相干批），给网络成套"同一调度→整片场"信号，
+    # 对算子学习的泛化通常更好。只作用于 PDE 内部点；IC/BC 仍每点独立（那里调度多样性有益）。
+    n_schedules_per_batch: int = 0
+
     # ---------- 评估 ----------
     n_test_schedules: int = 16       # 随机测试调度数（逐条对解析真解算指标，再汇总）
     schedule_eval_seed: int = 2024   # 测试调度采样种子
