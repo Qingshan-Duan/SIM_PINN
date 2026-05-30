@@ -30,6 +30,12 @@ class PinnTvConfig(PinnConfig):
     # 对算子学习的泛化通常更好。只作用于 PDE 内部点；IC/BC 仍每点独立（那里调度多样性有益）。
     n_schedules_per_batch: int = 0
 
+    # ---------- Fourier 输入特征（改进②）----------
+    # 对网络输入 x̂ / t̂ 加 [sin(kπ·),cos(kπ·)]_{k=1..m} 特征，缓解谱偏置（段边界跳变、早期瞬态）。
+    # 纯网络输入编码，不改物理（源项段号查表用原始 t）。t 频率取 ~K 段数最匹配阶梯结构。
+    fourier_x: int = 0
+    fourier_t: int = 0
+
     # ---------- 评估 ----------
     n_test_schedules: int = 16       # 随机测试调度数（逐条对解析真解算指标，再汇总）
     schedule_eval_seed: int = 2024   # 测试调度采样种子

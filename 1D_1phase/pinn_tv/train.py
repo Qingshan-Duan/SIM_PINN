@@ -61,7 +61,7 @@ def train(cfg: PinnTvConfig, device: str = "cpu") -> Tuple[TvPinnMLP, List[dict]
     torch.manual_seed(cfg.seed)
     dev = torch.device(device)
     net = TvPinnMLP(cfg.n_segments, cfg.hidden_layers, cfg.hidden_units,
-                    hard_ic=cfg.hard_ic).to(dev)
+                    hard_ic=cfg.hard_ic, fourier_x=cfg.fourier_x, fourier_t=cfg.fourier_t).to(dev)
     history: List[dict] = []
     weights = {"pde": cfg.w_pde, "ic": cfg.w_ic, "bc": cfg.w_bc}
 
