@@ -8,6 +8,9 @@ import numpy as np
 import matplotlib
 
 matplotlib.use("Agg")  # 无显示环境下也能出图
+# 中文字体：标题/标签里有中文（如"尺子自检"），不配的话 DejaVu Sans 缺字形会告警 + 显示成方块。
+matplotlib.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
+matplotlib.rcParams["axes.unicode_minus"] = False  # 用 ASCII 连字符画负号，免得中文字体里负号缺字形
 import matplotlib.pyplot as plt
 
 from pinn.eval import EvalResult

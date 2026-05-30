@@ -149,13 +149,15 @@ D:\WorkSoftware\anaconnda\envs\tor\Scripts\pytest.exe
 │   ├── main.py       # 入口
 │   └── tests/
 ├── output/simulator/ # 模拟产物（gitignored）
-├── pinn/             # 推进中：本系统的 PINN（单场景纯物理损失；无井+定流量井已驯服，
+├── pinn/             # 完成：本系统的 PINN（单场景纯物理损失；无井+定流量井已驯服，
 │                     # 软约束 IC + 自适应权重；解析真解校验 + 模拟器交叉验证）。架构见 CLAUDE.md
-├── surrogate/        # 计划中：参数化代理模型（扰动井控生成数据 + 物理损失正则）
+├── pinn_param/       # 推进中：参数化 PINN，一个网 (x̂,t̂,q̂)→p̂ 覆盖 ±20% 流量范围，纯物理无数据，
+│                     # 复用 pinn/ 大部分模块；对解析真解跨 q R²≈0.9999。架构见 CLAUDE.md
+├── surrogate/        # 计划中：参数化代理模型（扰动井控生成数据 + 物理损失正则；时变井控走自回归）
 └── README.md
 ```
 
-`pinn/` 与 `surrogate/` 是**两条平行的方向**，不是 PINN 的两个阶段。详细约定见仓库根目录的
+`pinn/`、`pinn_param/` 与 `surrogate/` 都是**平行方向**，不是先后阶段。详细约定见仓库根目录的
 `CLAUDE.md`。这两个文件夹里写脚本时，**可以直接** `from simulator.config import Config;
 from simulator.core import run` 来在内存里调用模拟器拿参考解 / 训练数据（包根都是
 `1D_1phase/`），也可以走 `output/simulator/` 落盘文件。
