@@ -155,9 +155,13 @@ D:\WorkSoftware\anaconnda\envs\tor\Scripts\pytest.exe
 │                     # 复用 pinn/ 大部分模块；跨 q R²≈0.9999。架构见 CLAUDE.md
 ├── pinn_tv/          # 完成：时变井控 PINN，整条 15 段调度作输入 (17 维)，纯物理。加 Fourier 时间特征
 │                     # 破谱偏置 R²≈0.999；脉络见 pinn_tv/NOTES.md。架构见 CLAUDE.md
-├── surrogate/        # 下一步：数据驱动 + 物理损失正则（核心实验：选纯数据刚好拟合的数据量，对比有无物理损失）
+├── surrogate/        # 完成：自回归 + 离散 BE 物理正则，三档对比（纯数据/数据+物理/物理-only）+ 仿射LSQ。
+│                     # 结论：线性问题数据本身就够，物理价值在去噪；脉络见 surrogate/NOTES.md。架构见 CLAUDE.md
 └── README.md
 ```
+
+> 整个 `1D_1phase/` 已完成（模拟器 + Family 1 三个 PINN + Family 2 代理）。**下一站是新建 `1D_2phase/`
+> （1D 两相水驱）**，不做 2D——单相线性对代理太简单，两相非线性才是物理正则/参数反演的主场。
 
 `pinn/`、`pinn_param/`、`pinn_tv/` 与 `surrogate/` 都是**平行方向**，不是先后阶段。详细约定见仓库根目录的
 `CLAUDE.md`。这两个文件夹里写脚本时，**可以直接** `from simulator.config import Config;
