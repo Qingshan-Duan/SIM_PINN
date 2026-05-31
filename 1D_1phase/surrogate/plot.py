@@ -1,4 +1,4 @@
-"""代理实验画图（中文字体已配）。三档对比 + 仿射 LSQ 参照，组会汇报用。"""
+"""代理实验画图（中文字体已配）。三档对比 + 仿射 LSQ 参照。"""
 from __future__ import annotations
 
 from pathlib import Path
