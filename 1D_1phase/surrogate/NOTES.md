@@ -77,15 +77,14 @@
    ⇒ **数据真正不可或缺的两个场景**：① 物理**近似/含未知参数**时数据**纠偏/反演**(历史拟合)；
    ② 多次前向(优化/UQ/反演)时代理**摊销加速 + 端到端可导**。
 4. **物理正则的大舞台 = 非线性、算子本身难的问题** → 下一步 **1D 两相**（相渗非线性 + 饱和度激波 +
-   非均质/扰动渗透率），仿射 LSQ 失效、数据稀缺变真问题，物理填空隙才有分辨度。见 memory
-   `project-next-1d-2phase`、`reference-surrogate-physics-value`。
+   非均质/扰动渗透率），仿射 LSQ 失效、数据稀缺变真问题，物理填空隙才有分辨度。
 
 ## 复现
 ```powershell
 # 从 1D_1phase/
-D:\WorkSoftware\anaconnda\envs\tor\python.exe -m surrogate.data_gen          # 生成数据
-D:\WorkSoftware\anaconnda\envs\tor\python.exe -m surrogate.experiment v1     # 三档全套实验 → output/surrogate/<时间戳>_v1/
-D:\WorkSoftware\anaconnda\envs\tor\python.exe -m surrogate.sweep             # 纯数据数据量 sweep（阶段0）
+python -m surrogate.data_gen          # 生成数据
+python -m surrogate.experiment v1     # 三档全套实验 → output/surrogate/<时间戳>_v1/
+python -m surrogate.sweep             # 纯数据数据量 sweep（阶段0）
 ```
 产物：`output/surrogate/<时间戳>_<name>/` 含 A–E 的 json + 5 张图（λ-sweep / 干净 grid / 含噪 grid /
 外推 / 去噪剖面）+ config + README。

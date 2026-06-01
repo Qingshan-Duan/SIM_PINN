@@ -9,7 +9,7 @@
 
 为什么必须把**整条**调度喂进去（而不是只喂当前时刻的瞬时流量）：扩散方程有**记忆**
 （Duhamel 卷积），t 时刻压力依赖**整段流量历史**，不只当前流量。只喂瞬时 q 是病态的
-（两条历史不同但当前 q 相同的调度 → 压力不同 → 一对多）。详见 CLAUDE.md「历史依赖」那条。
+（两条历史不同但当前 q 相同的调度 → 压力不同 → 一对多）。
 > 对比：自回归 surrogate（Family 2）用「上一步的场」当状态扛历史，才可以每步只喂瞬时流量。
 > 那是 surrogate 的活；这里是纯物理 PINN 的高维尝试。
 
@@ -91,7 +91,7 @@ R²_mean=0.99915、R²_min=0.9984、MAPE=0.064%、worst 0.094 MPa ≈ pinn_param
 
 ```powershell
 # 从 1D_1phase/，默认配置（5×64, 20k+1.5k）
-D:\WorkSoftware\anaconnda\envs\tor\python.exe -m pinn_tv.main --name try1
+python -m pinn_tv.main --name try1
 # 自定义预算（如 try2/try3）：python -c 里 PinnTvConfig(hidden_units=96, adam_iters=40000, lbfgs_iters=8000, ...) 再 main(cfg=...)
 ```
 

@@ -1,7 +1,7 @@
 # 1D 单相数值模拟器
 
 一维单相微可压缩流体在多孔介质中的隐式 FVM 模拟器。是 `sim_pinn` 学习项目的第一块——
-仓库整体规划见根目录的 `CLAUDE.md`。
+仓库整体规划见[根目录 README](../README.md)。
 
 ## 物理模型与数值方法
 
@@ -101,10 +101,10 @@ cfg = Config(
 
 ## 运行
 
-Python 用 conda 的 `tor` 环境，但**直接走绝对路径**（不套 `conda run`）。所有命令在 `1D_1phase/` 目录下执行（包导入是 `simulator.X`）。
+所有命令在 `1D_1phase/` 目录下执行（包导入是 `simulator.X`）。`python` 指你所在 Python 环境的解释器（需 `numpy`/`scipy`/`matplotlib`）。
 
 ```powershell
-D:\WorkSoftware\anaconnda\envs\tor\python.exe -m simulator.main
+python -m simulator.main
 ```
 
 产物落到 `1D_1phase/output/simulator/`：
@@ -122,7 +122,7 @@ D:\WorkSoftware\anaconnda\envs\tor\python.exe -m simulator.main
 ## 测试
 
 ```powershell
-D:\WorkSoftware\anaconnda\envs\tor\Scripts\pytest.exe
+pytest
 ```
 
 测试都集中在数学/物理上的关键不变量：
@@ -150,21 +150,17 @@ D:\WorkSoftware\anaconnda\envs\tor\Scripts\pytest.exe
 │   └── tests/
 ├── output/simulator/ # 模拟产物（gitignored）
 ├── pinn/             # 完成：本系统的 PINN（单场景纯物理损失；无井+定流量井已驯服，
-│                     # 软约束 IC + 自适应权重；解析真解校验 + 模拟器交叉验证）。架构见 CLAUDE.md
-├── pinn_param/       # 完成：参数化 PINN，一个网 (x̂,t̂,q̂)→p̂ 覆盖 ±20% 流量范围，纯物理无数据，
-│                     # 复用 pinn/ 大部分模块；跨 q R²≈0.9999。架构见 CLAUDE.md
-├── pinn_tv/          # 完成：时变井控 PINN，整条 15 段调度作输入 (17 维)，纯物理。加 Fourier 时间特征
-│                     # 破谱偏置 R²≈0.999；脉络见 pinn_tv/NOTES.md。架构见 CLAUDE.md
-├── surrogate/        # 完成：自回归 + 离散 BE 物理正则，三档对比（纯数据/数据+物理/物理-only）+ 仿射LSQ。
-│                     # 结论：线性问题数据本身就够，物理价值在去噪；脉络见 surrogate/NOTES.md。架构见 CLAUDE.md
-└── README.md
+│                     # 软约束 IC + 自适应权重；解析真解校验 + 模拟器交叉验证）├── pinn_param/       # 完成：参数化 PINN，一个网 (x̂,t̂,q̂)→p̂ 覆盖 ±20% 流量范围，纯物理无数据，
+│                     # 复用 pinn/ 大部分模块；跨 q R²≈0.9999├── pinn_tv/          # 完成：时变井控 PINN，整条 15 段调度作输入 (17 维)，纯物理。加 Fourier 时间特征
+│                     # 破谱偏置 R²≈0.999；脉络见 pinn_tv/NOTES.md├── surrogate/        # 完成：自回归 + 离散 BE 物理正则，三档对比（纯数据/数据+物理/物理-only）+ 仿射LSQ。
+│                     # 结论：线性问题数据本身就够，物理价值在去噪；脉络见 surrogate/NOTES.md└── README.md
 ```
 
 > 整个 `1D_1phase/` 已完成（模拟器 + Family 1 三个 PINN + Family 2 代理）。**下一站是新建 `1D_2phase/`
 > （1D 两相水驱）**，不做 2D——单相线性对代理太简单，两相非线性才是物理正则/参数反演的主场。
 
-`pinn/`、`pinn_param/`、`pinn_tv/` 与 `surrogate/` 都是**平行方向**，不是先后阶段。详细约定见仓库根目录的
-`CLAUDE.md`。这两个文件夹里写脚本时，**可以直接** `from simulator.config import Config;
+`pinn/`、`pinn_param/`、`pinn_tv/` 与 `surrogate/` 都是**平行方向**，不是先后阶段。这些文件夹里写脚本时，
+**可以直接** `from simulator.config import Config;
 from simulator.core import run` 来在内存里调用模拟器拿参考解 / 训练数据（包根都是
 `1D_1phase/`），也可以走 `output/simulator/` 落盘文件。
 
