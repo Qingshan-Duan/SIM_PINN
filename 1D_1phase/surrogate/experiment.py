@@ -174,9 +174,9 @@ def _example(d, base, run_dir, lam, N=4, sigma=0.1, sched_idx=0):
 
 # ---------------- 主流程 ----------------
 
-def main(name: str = "") -> Path:
+def main(name: str = "", phys_states: str = "augmented") -> Path:
     d = load_dataset()
-    base = dataclasses.replace(SurrogateConfig(), n_phys=2048)
+    base = dataclasses.replace(SurrogateConfig(), n_phys=2048, phys_states=phys_states)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_dir = OUT / (stamp + (f"_{name}" if name else ""))
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -241,7 +241,7 @@ def _write_readme(run_dir, A, B, C, Dx, E, lam_star, base, Ns):
     L = [
         f"# surrogate 三档对比实验 {run_dir.name}", "",
         f"架构 B 自回归 + 离散 BE 物理正则。场景同 pinn_tv（原生单格井）。"
-        f"网络 {base.hidden_layers}×{base.hidden_units}，augmented 物理 collocation，"
+        f"网络 {base.hidden_layers}×{base.hidden_units}，{base.phys_states} 物理 collocation，"
         f"指标 = 测试集（256 条）rollout，单元格 = R²/max\\|err\\|(MPa)，3 种子均值。", "",
         f"**三档**：纯数据(λ=0) / 数据+物理(λ={lam_star}) / 物理-only(无数据损失)；"
         f"**仿射LSQ** = 最小二乘拟合线性算子，数据下限参照。", "",
@@ -275,4 +275,6 @@ def _write_readme(run_dir, A, B, C, Dx, E, lam_star, base, Ns):
 
 if __name__ == "__main__":
     import sys
-    main(sys.argv[1] if len(sys.argv) > 1 else "")
+    name = sys.argv[1] if len(sys.argv) > 1 else ""
+    phys_states = sys.argv[2] if len(sys.argv) > 2 else "augmented"
+    main(name, phys_states)
