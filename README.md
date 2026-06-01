@@ -27,11 +27,11 @@
 
 **① 模拟器**：压力场的时空演化（隐式 FVM 解）。
 
-![simulator heatmap](figures/simulator_heatmap.png)
+<img src="figures/simulator_heatmap.png" alt="simulator heatmap" width="500">
 
 **② PINN（Family 1）**：网络解（虚线）逐时刻贴合解析真解（实线），纯物理损失、不读数据。
 
-![pinn profiles](figures/pinn_profiles.png)
+<img src="figures/pinn_profiles.png" alt="pinn profiles" width="500">
 
 **③ 代理（Family 2）**：含噪数据下三档对比——纯数据/仿射 LSQ 追噪声而崩，数据+物理、物理-only 稳。
 这正是本系统的核心结论：线性问题数据本身就够，**物理正则可测得的价值集中在去噪**。
