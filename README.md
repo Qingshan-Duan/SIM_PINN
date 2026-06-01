@@ -21,6 +21,23 @@
 | `1D_1phase/surrogate/` | 1D 单相代理模型：自回归 + 离散 BE 物理正则。三档对比（纯数据/数据+物理/物理-only）。**结论：线性问题数据本身就够，物理价值在去噪；大舞台是非线性两相** | ✅ 完成 |
 | `1D_2phase/` | 1D 两相（水驱）物理系统：模拟器 + PINN + 代理（同样内部结构）。非线性，物理正则该显威 | 🕐 下一步 |
 
+## 结果一览
+
+三条线各一张代表图（完整结果见各子目录的 `output/` 与 NOTES）：
+
+**① 模拟器**：压力场的时空演化（隐式 FVM 解）。
+
+![simulator heatmap](figures/simulator_heatmap.png)
+
+**② PINN（Family 1）**：网络解（虚线）逐时刻贴合解析真解（实线），纯物理损失、不读数据。
+
+![pinn profiles](figures/pinn_profiles.png)
+
+**③ 代理（Family 2）**：含噪数据下三档对比——纯数据/仿射 LSQ 追噪声而崩，数据+物理、物理-only 稳。
+这正是本系统的核心结论：线性问题数据本身就够，**物理正则可测得的价值集中在去噪**。
+
+![surrogate noisy 3-arm](figures/surrogate_noisy_3arms.png)
+
 ## 运行方式
 
 > ⚠️ **每个子项目都是独立的 Python 包**。`simulator` / `pinn` 这些 import 用的是包名而不是绝对路径，
